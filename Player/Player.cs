@@ -16,6 +16,7 @@ public class Player : MonoBehaviour
     public Camera followCamera;
 
     public PInfo pInfo;
+    public GameObject GrenadeObj;
 
     float hAxis;
     float vAxis;
@@ -28,6 +29,8 @@ public class Player : MonoBehaviour
     bool sDown3;
     bool fDown;
     bool rDown;
+
+    bool gDown;
 
     bool isJumping;
     bool isDodging;
@@ -81,6 +84,7 @@ public class Player : MonoBehaviour
             Interaction();
             Swap();
             Reload();
+            Grenade();
         }
 
     }
@@ -97,6 +101,7 @@ public class Player : MonoBehaviour
         sDown3 = Input.GetButtonDown("Swap3");
         fDown = Input.GetButton("Fire1");
         rDown = Input.GetButtonDown("Reload");
+        gDown = Input.GetButtonDown("Fire2");
     }
 
     void move()
@@ -170,6 +175,33 @@ public class Player : MonoBehaviour
             anim.SetTrigger(equipWeapon.type==Weapons.Type.Melee?"doSwing":"doShot");
             fireDelay = 0;
         } 
+    }
+
+    void Grenade()
+    {
+        
+        if (pInfo.hasGrenades == 0)
+            return;
+
+        if(gDown && !isReloading && !isSwaping)
+        {
+            Debug.Log("Grenade SHoot!");
+            Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
+            RaycastHit rayhit;
+            if (Physics.Raycast(ray, out rayhit, 100))
+            {
+                Vector3 nextVec = rayhit.point - transform.position;
+                nextVec.y = 15;
+
+                GameObject instantGrenade = Instantiate(GrenadeObj, transform.position, transform.rotation);
+                Rigidbody rigidGrenade = instantGrenade.GetComponent<Rigidbody>();
+                rigidGrenade.AddForce(nextVec,ForceMode.Impulse);
+                rigidGrenade.AddTorque(Vector3.back * 10, ForceMode.Impulse);
+
+                pInfo.hasGrenades --;
+                grenades[pInfo.hasGrenades].SetActive(false);
+            }
+        }
     }
 
     void Reload()
@@ -289,7 +321,7 @@ public class Player : MonoBehaviour
             NearObject = other.gameObject;
         }
 
-        Debug.Log(NearObject);
+        //Debug.Log(NearObject);
     }
 
     private void OnTriggerExit(Collider other)
@@ -347,7 +379,6 @@ public class Player : MonoBehaviour
         {
             if (NearObject.tag == "Weapon")
             {
-                Debug.Log("E");
                 Item item = NearObject.GetComponent<Item>();
                 int weaponIndex = item.value;
                 hasWeapons[weaponIndex] = true;
