@@ -1,21 +1,33 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Enemy : MonoBehaviour
 {
 
     public EInfo eInfo;
+    public Transform Target;
+
+    public bool isChasing;
 
     Rigidbody rigid;
     BoxCollider boxCollider;
     Material mat;
 
+    NavMeshAgent nav;
+
+    Animator anim;
+
     private void Awake()
     {
         rigid = GetComponent<Rigidbody>();
         boxCollider = GetComponent<BoxCollider>();
-        mat = GetComponent<MeshRenderer>().material; //material은 이렇게 가져와야된다.
+        mat = GetComponentInChildren<MeshRenderer>().material; //material은 이렇게 가져와야된다.
+        nav = GetComponent<NavMeshAgent>();
+        anim = GetComponentInChildren<Animator>();
+
+        Invoke("ChaseStart", 2);
     }
 
     private void OnTriggerEnter(Collider other)
@@ -64,6 +76,10 @@ public class Enemy : MonoBehaviour
             mat.color = Color.gray;
             gameObject.layer = 12;
 
+            isChasing = false;
+            nav.enabled = false;
+
+            anim.SetTrigger("doDie");
             if (isGrenade)
             {
                 reactVec = reactVec.normalized;
@@ -81,7 +97,7 @@ public class Enemy : MonoBehaviour
             }
 
 
-
+           
             Destroy(gameObject, 4);
         }
     }
@@ -99,9 +115,31 @@ public class Enemy : MonoBehaviour
 
     }
 
+    void ChaseStart()
+    {
+        isChasing = true;
+        anim.SetBool("isWalk",true);
+    }
+
     // Update is called once per frame
     void Update()
     {
+        if(isChasing)
+            nav.SetDestination(Target.position);
+    }
 
+    void FreezeVelocity()
+    {
+        if (isChasing)
+        {
+            rigid.velocity = Vector3.zero;
+            rigid.angularVelocity = Vector3.zero;
+        }
+        
+    }
+
+    private void FixedUpdate()
+    {
+        FreezeVelocity();
     }
 }
